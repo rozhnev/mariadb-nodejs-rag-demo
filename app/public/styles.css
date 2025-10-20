@@ -259,25 +259,3 @@ button:hover {
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
-
-/* API Info Section */
-.api-info {
-    background-color: #f8f9fa;
-    padding: 20px;
-    border-radius: 4px;
-    margin-top: 20px;
-}
-
-.api-info h3 {
-    margin-top: 0;
-    color: #004c91;
-}
-
-.api-link {
-    color: #004c91;
-    text-decoration: none;
-}
-
-.api-link:hover {
-    text-decoration: underline;
-}
