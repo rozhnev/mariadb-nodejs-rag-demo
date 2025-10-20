@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const ollamaUrl = process.env.OLLAMA_URL || 'http://ollama:11434';
 
 // Middleware
 app.use(cors());
@@ -40,7 +41,7 @@ async function generateVector(query) {
   }
 
   try {
-    const response = await fetch('http://ollama:11434/api/embed', {
+    const response = await fetch(`${ollamaUrl}/api/embed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -163,29 +164,26 @@ I'm looking for ${userQuery}.
 Available products:
 
 ${productsText}`;
-
-    // Try different models in order of preference
-    const modelOrder = ['gemma2:2b', 'llama3.2:1b', 'nomic-embed-text'];
-    
-    for (const model of modelOrder) {
+      const model ='llama3.2:1b'; //'gemma2:2b',
+      const options = {
+        temperature: 0.7,
+        num_predict: 150,
+        top_p: 0.9
+      };
       try {
-        console.log(`🤖 Trying model: ${model}`);
+        console.log(`🤖 Trying model: ${model}, path: ${ollamaUrl}/api/generate`);
         
         // Call local model
-        const response = await fetch('http://ollama:11434/api/generate', {
+        const response = await fetch(`${ollamaUrl}/api/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: model,
-            prompt: prompt,
+            model,
+            prompt,
             stream: false,
-            options: {
-              temperature: 0.7,
-              num_predict: 150,
-              top_p: 0.9
-            }
+            options
           })
         });
 
@@ -197,11 +195,10 @@ ${productsText}`;
           }
         }
         
-        console.log(`❌ Model ${model} failed or returned empty response`);
+        console.log(`❌ Model ${model} failed or returned empty response :(`);
       } catch (modelError) {
         console.log(`❌ Model ${model} error:`, modelError.message);
       }
-    }
     
     throw new Error('All models failed');
   } catch (error) {
