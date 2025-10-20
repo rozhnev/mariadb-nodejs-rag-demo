@@ -192,42 +192,7 @@ SELECT
 FROM temp_walmart_import
 WHERE TRIM(sku) IS NOT NULL AND TRIM(sku) != '';
 
--- Create simplified products table entries
-INSERT IGNORE INTO products (
-    sku, name, description, brand, category, price, original_price, discount,
-    rating, review_count, main_image, url, available_for_delivery, available_for_pickup
-)
-SELECT DISTINCT
-    w.sku,
-    w.product_name,
-    CASE 
-        WHEN CHAR_LENGTH(w.description) > 1000 
-        THEN CONCAT(LEFT(w.description, 997), '...')
-        ELSE w.description 
-    END,
-    w.brand,
-    w.category_name,
-    w.final_price,
-    w.initial_price,
-    CASE 
-        WHEN w.initial_price > 0 AND w.final_price > 0 AND w.initial_price > w.final_price
-        THEN w.initial_price - w.final_price 
-        ELSE COALESCE(w.discount, 0)
-    END,
-    CASE WHEN w.rating BETWEEN 0 AND 5 THEN w.rating ELSE NULL END,
-    w.review_count,
-    w.main_image,
-    w.url,
-    COALESCE(w.available_for_delivery, 1),
-    COALESCE(w.available_for_pickup, 0)
-FROM walmart_products w
-WHERE w.sku IS NOT NULL AND w.product_name IS NOT NULL;
 
 -- Display import statistics
 SELECT 'CSV Import Complete' as Status;
 SELECT COUNT(*) as 'Total Walmart Products Imported' FROM walmart_products;
-SELECT COUNT(*) as 'Total Simplified Products Created' FROM products;
-SELECT COUNT(*) as 'Products with Valid Ratings' FROM products WHERE rating > 0;
-SELECT ROUND(AVG(price), 2) as 'Average Product Price' FROM products WHERE price > 0;
-SELECT COUNT(DISTINCT brand) as 'Unique Brands' FROM products WHERE brand IS NOT NULL;
-SELECT COUNT(DISTINCT category) as 'Unique Categories' FROM products WHERE category IS NOT NULL;
