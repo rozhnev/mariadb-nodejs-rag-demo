@@ -2,6 +2,8 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const https = require('https');
+const fs = require('fs').promises;
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +12,7 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Database configuration
 const dbConfig = {
@@ -31,7 +34,7 @@ const pool = mysql.createPool(dbConfig);
  * @param {string} query - The input text to generate embedding for
  * @returns {Promise<number[]>} - Array of embedding values
  */
-async function generateVectorOllama(query) {
+async function generateVector(query) {
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
     throw new Error('Query must be a non-empty string');
   }
@@ -65,89 +68,6 @@ async function generateVectorOllama(query) {
   }
 }
 
-/**
- * Generate vector embedding for input text using Google's Gemini Embedding API
- * @param {string} query - The input text to generate embedding for
- * @returns {Promise<number[]>} - Array of embedding values
- */
-async function generateVector(query) {
-  // Try Ollama first, fallback to Google API
-  const useLocal = process.env.USE_LOCAL_EMBEDDINGS === 'true';
-  
-  if (useLocal) {
-    try {
-      console.log('Using local Ollama embedding model...');
-      return await generateVectorOllama(query);
-    } catch (error) {
-      console.log('Ollama failed, falling back to Google API:', error.message);
-    }
-  }
-
-  return new Promise((resolve, reject) => {
-    const apiKey = process.env.GOOGLE_API_KEY;
-    
-    if (!apiKey) {
-      reject(new Error('GOOGLE_API_KEY environment variable is required'));
-      return;
-    }
-
-    if (!query || typeof query !== 'string' || query.trim().length === 0) {
-      reject(new Error('Query must be a non-empty string'));
-      return;
-    }
-
-    const postData = JSON.stringify({
-      model: 'models/gemini-embedding-001',
-      content: {
-        parts: [{ text: query.trim() }]
-      }
-    });
-
-    const options = {
-      hostname: 'generativelanguage.googleapis.com',
-      port: 443,
-      path: `/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          
-          if (res.statusCode === 200) {
-            if (response.embedding && response.embedding.values) {
-              resolve(response.embedding.values);
-            } else {
-              reject(new Error('Invalid response format: missing embedding values'));
-            }
-          } else {
-            reject(new Error(`API Error ${res.statusCode}: ${response.error?.message || data}`));
-          }
-        } catch (parseError) {
-          reject(new Error(`JSON parse error: ${parseError.message}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      reject(new Error(`Request error: ${error.message}`));
-    });
-
-    req.write(postData);
-    req.end();
-  });
-}
 
 /**
  * Find the 5 most similar embedding vectors in the database
@@ -313,6 +233,84 @@ ${productsText}`;
   }
 }
 
+/**
+ * Simple template rendering function
+ * @param {string} templatePath - Path to the HTML template
+ * @param {Object} data - Data to render in template
+ * @returns {Promise<string>} - Rendered HTML
+ */
+async function renderTemplate(templatePath, data = {}) {
+  try {
+    let template = await fs.readFile(templatePath, 'utf8');
+    
+    // Replace simple variables
+    template = template.replace(/\{\{query\}\}/g, data.query || '');
+    
+    // Build results section
+    let resultsHtml = '';
+    
+    if (data.hasResults && data.similarItems && data.similarItems.length > 0) {
+      // AI Recommendation section
+      let aiSection = '';
+      if (data.aiRecommendation) {
+        aiSection = `
+          <div class="ai-recommendation">
+            <div class="ai-badge">AI Powered</div>
+            <h4>
+              <span class="ai-icon">🤖</span>
+              Smart Product Recommendation
+            </h4>
+            <p>${data.aiRecommendation}</p>
+          </div>
+        `;
+      }
+      
+      // Products section
+      const productsHtml = data.similarItems.map(item => `
+        <div class="result-card">
+          <a href="${item.url || '#'}" target="_blank" class="product-title">
+            ${item.product_name || 'Unknown Product'}
+          </a>
+          <div class="product-meta">
+            <span class="price">€${item.final_price || 'N/A'}</span>
+            <span class="rating">⭐ ${item.rating || 'N/A'}</span>
+            <span class="similarity">${item.similarity_percentage || '0'}% match</span>
+          </div>
+          <div class="category">
+            📂 ${item.category_name || 'N/A'} → ${item.root_category_name || 'N/A'}
+          </div>
+          <div class="description truncated">
+            ${item.description || 'No description available'}
+          </div>
+        </div>
+      `).join('');
+      
+      resultsHtml = `
+        <div class="search-results">
+          ${aiSection}
+          <h3>🔍 Semantic Search Results for "${data.query}" (${data.resultCount} items found)</h3>
+          ${productsHtml}
+        </div>
+      `;
+    } else if (data.query) {
+      resultsHtml = `
+        <div class="no-results">
+          <h3>🔍 No results found for "${data.query}"</h3>
+          <p>Try a different search term or check if embeddings are generated for the products.</p>
+        </div>
+      `;
+    }
+    
+    // Replace results section
+    template = template.replace('<!-- RESULTS_SECTION -->', resultsHtml);
+    
+    return template;
+  } catch (error) {
+    console.error('Template rendering error:', error);
+    return `<h1>Template Error</h1><p>${error.message}</p>`;
+  }
+}
+
 
 // Test database connection
 async function testConnection() {
@@ -333,315 +331,38 @@ async function testConnection() {
 
 // Routes
 app.get('/', async (req, res) => {
-  const query = req.query.q || '';
-  let queryVector = null;
-  let similarItems = [];
-  let aiRecommendation = null;
-  if (query) {
-    queryVector = await generateVector(query);
-    similarItems = await findSimilarVectors(queryVector, 5);
-    aiRecommendation = await getResponse(query, similarItems);
-
+  try {
+    const query = req.query.q || '';
+    let queryVector = null;
+    let similarItems = [];
+    let aiRecommendation = null;
+    
+    if (query) {
+      queryVector = await generateVector(query);
+      similarItems = await findSimilarVectors(queryVector, 5);
+      if (similarItems.length > 0) {
+        aiRecommendation = await getResponse(query, similarItems);
+      }
+    }
+    
+    // Prepare template data
+    const templateData = {
+      query,
+      similarItems,
+      aiRecommendation,
+      hasResults: similarItems.length > 0,
+      resultCount: similarItems.length
+    };
+    
+    // Render template
+    const templatePath = path.join(__dirname, 'templates', 'index.html');
+    const html = await renderTemplate(templatePath, templateData);
+    
+    res.send(html);
+  } catch (error) {
+    console.error('Route error:', error);
+    res.status(500).send(`<h1>Server Error</h1><p>${error.message}</p>`);
   }
-  const htmlPage = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Walmart Products Search - RAG Demo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #004c91;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .search-form {
-            margin-bottom: 30px;
-        }
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        input[type="text"]:focus {
-            border-color: #004c91;
-            outline: none;
-        }
-        button {
-            background-color: #004c91;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #003d73;
-        }
-        .search-results {
-            margin: 20px 0;
-        }
-        .result-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .result-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            transform: translateY(-1px);
-            transition: all 0.2s ease;
-        }
-        .product-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #004c91;
-            margin-bottom: 8px;
-            text-decoration: none;
-        }
-        .product-title:hover {
-            color: #003d73;
-            text-decoration: underline;
-        }
-        .product-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .price {
-            font-size: 20px;
-            font-weight: bold;
-            color: #e47911;
-        }
-        .rating {
-            background-color: #f0f8ff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #004c91;
-        }
-        .similarity {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .category {
-            color: #666;
-            font-size: 14px;
-            background-color: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-        .description {
-            color: #555;
-            line-height: 1.4;
-            margin-top: 10px;
-        }
-        .description.truncated {
-            max-height: 60px;
-            overflow: hidden;
-            position: relative;
-        }
-        .description.truncated::after {
-            content: "...";
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: white;
-            padding-left: 20px;
-        }
-        .no-results {
-            text-align: center;
-            color: #666;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            margin: 20px 0;
-        }
-        .ai-recommendation {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin: 20px 0;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-        .ai-recommendation::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
-            pointer-events: none;
-        }
-        .ai-recommendation h4 {
-            margin: 0 0 15px 0;
-            font-size: 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-            z-index: 1;
-        }
-        .ai-recommendation .ai-icon {
-            font-size: 24px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 40px;
-            height: 40px;
-        }
-        .ai-recommendation p {
-            margin: 0;
-            font-size: 16px;
-            line-height: 1.6;
-            position: relative;
-            z-index: 1;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid rgba(255, 255, 255, 0.5);
-        }
-        .ai-recommendation .ai-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            z-index: 1;
-        }
-        .ai-recommendation:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
-        }
-        .ai-recommendation .ai-icon {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .search-results h3 {
-            color: #004c91;
-            border-bottom: 2px solid #e1e8ed;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🛒 Walmart Products Search</h1>
-        <p style="text-align: center; color: #666; margin-bottom: 30px;">
-            MariaDB + Node.js RAG Demo - Search through 1,011 products
-        </p>
-        
-        <form class="search-form" action="/" method="get">
-            <label for="product-search">Find product:</label>
-            <input 
-                type="text" 
-                id="product-search" 
-                name="q" 
-                placeholder="Enter product name, brand, or description..."
-                value="${query}"
-                required
-            >
-            <button type="submit">Search</button>
-        </form>
-        
-        ${similarItems.length > 0 ? `
-        <div class="search-results">
-            ${aiRecommendation ? `
-            <div class="ai-recommendation">
-                <div class="ai-badge">AI Powered</div>
-                <h4>
-                    <span class="ai-icon">🤖</span>
-                    Smart Product Recommendation
-                </h4>
-                <p>${aiRecommendation}</p>
-            </div>
-            ` : ''}
-            <h3>🔍 Semantic Search Results for "${query}" (${similarItems.length} items found)</h3>
-            ${similarItems.map(item => `
-                <div class="result-card">
-                    <a href="${item.url}" target="_blank" class="product-title">
-                        ${item.product_name}
-                    </a>
-                    <div class="product-meta">
-                        <span class="price">€${item.final_price}</span>
-                        <span class="rating">⭐ ${item.rating}</span>
-                        <span class="similarity">${item.similarity_percentage}% match</span>
-                    </div>
-                    <div class="category">
-                        📂 ${item.category_name} → ${item.root_category_name}
-                    </div>
-                    <div class="description truncated">
-                        ${item.description}
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-        ` : query ? `
-        <div class="no-results">
-            <h3>🔍 No results found for "${query}"</h3>
-            <p>Try a different search term or check if embeddings are generated for the products.</p>
-        </div>
-        ` : ''}
-    </div>
-</body>
-</html>
-  `;
-  
-  res.send(htmlPage);
 });
 
 // Health check endpoint

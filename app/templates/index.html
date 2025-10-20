@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walmart Products Search - RAG Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Walmart Products Search</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            MariaDB + Node.js RAG Demo - Search through 1,011 products
+        </p>
+        
+        <form class="search-form" action="/" method="get">
+            <label for="product-search">Find product:</label>
+            <input 
+                type="text" 
+                id="product-search" 
+                name="q" 
+                placeholder="Enter product name, brand, or description..."
+                value="{{query}}"
+                required
+            >
+            <button type="submit">Search</button>
+        </form>
+        
+        <!-- RESULTS_SECTION -->
+        
+        <div class="api-info">
+            <h3>📡 Available API Endpoints</h3>
+            <ul>
+                <li><a href="/api/products" class="api-link">GET /api/products</a> - All products (paginated)</li>
+                <li><a href="/api/search?q=laptop" class="api-link">GET /api/search?q=laptop</a> - Search products</li>
+                <li><a href="/api/generate-vector?q=wireless headphones" class="api-link">GET /api/generate-vector?q=text</a> - Generate vector embedding</li>
+                <li><a href="/api/semantic-search?q=wireless headphones" class="api-link">GET /api/semantic-search?q=text</a> - 🔥 Semantic search with vectors</li>
+                <li><a href="/api/recommend?q=healthy snacks for kids" class="api-link">GET /api/recommend?q=text</a> - 🤖 AI recommendations</li>
+                <li><a href="/api/categories" class="api-link">GET /api/categories</a> - Product categories</li>
+                <li><a href="/api/brands" class="api-link">GET /api/brands</a> - Product brands</li>
+                <li><a href="/api/stats" class="api-link">GET /api/stats</a> - Database statistics</li>
+                <li><a href="/health" class="api-link">GET /health</a> - Health check</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
