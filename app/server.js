@@ -203,30 +203,8 @@ ${productsText}`;
     throw new Error('All models failed');
   } catch (error) {
     console.error('LLaMA generation error:', error);
-    
-    // Enhanced fallback with product analysis
-    const topProduct = products[0];
-    const productFeatures = [];
-    
-    // Analyze product features
-    if (topProduct.rating && parseFloat(topProduct.rating) >= 4.5) {
-      productFeatures.push('highly rated');
-    }
-    if (topProduct.description && topProduct.description.toLowerCase().includes('organic')) {
-      productFeatures.push('organic');
-    }
-    if (topProduct.description && topProduct.description.toLowerCase().includes('natural')) {
-      productFeatures.push('natural');
-    }
-    if (topProduct.category_name && topProduct.category_name.toLowerCase().includes('kids')) {
-      productFeatures.push('kid-friendly');
-    }
-    
-    const featuresText = productFeatures.length > 0 
-      ? ` It stands out for being ${productFeatures.join(', ')}.`
-      : '';
-    
-    return `Based on your search for "${userQuery}", I recommend the **${topProduct.name || topProduct.product_name}**. This product has a ${topProduct.rating || 'good'}/5.0 rating and is priced at $${topProduct.price || topProduct.final_price || 'N/A'}.${featuresText} Among the available options, it appears to be the best match for your specific needs with excellent customer satisfaction.`;
+
+    return `LLaMA generation error.`;
   }
 }
 
