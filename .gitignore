@@ -1,0 +1,147 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database data directories (Docker volumes)
+mariadb-data/
+mysql-data/
+db-data/
+
+# Ollama model storage (Docker volume)
+ollama-data/
+
+# Logs
+logs/
+*.log
+
+# Docker volumes and data
+docker-compose.override.yml
+.docker/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# API Keys and credentials
+config/secrets.json
+config/production.json
+secrets/
+credentials/
+*.key
+*.pem
+
+# Database dumps and exports
+*.sql.gz
+*.sql.zip
+dump.sql
+backup.sql
+
+# CSV data files (if large or sensitive)
+# Uncomment if you don't want to track CSV files
+# *.csv
+# walmart-products.csv
+
+# Build outputs
+dist/
+build/
+out/
+
+# Runtime directories
+temp/
+tmp/
+
+# Package manager lock files (choose one based on your preference)
+# package-lock.json  # Uncomment if using yarn
+# yarn.lock          # Uncomment if using npm
+
+# AI model files (if downloaded locally)
+*.bin
+*.gguf
+*.safetensors
+models/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache (if using Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local development files
+.local/
+local/
+
+# Test files and coverage
+test-results/
+coverage/
+
+# Deployment files
+.deployment
+deploy.sh
+
+# Custom ignore patterns for this project
+# Add project-specific files to ignore below
+init.flag
+setup.done

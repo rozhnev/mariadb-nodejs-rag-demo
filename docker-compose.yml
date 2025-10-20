@@ -1,0 +1,74 @@
+services:
+  mariadb:
+    image: mariadb:11.8
+    container_name: mariadb-rag-demo
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: rag_demo
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mariadb-data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - rag-network
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+# Ollama service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-rag-demo
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama-data:/root/.ollama
+    networks:
+      - rag-network
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+  app:
+    build: ./app
+    container_name: nodejs-rag-demo
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_NAME=rag_demo
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - USE_LOCAL_EMBEDDINGS=true
+      - OLLAMA_URL=http://ollama:11434
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - rag-network
+    command: ["npm", "run", "dev"]
+
+networks:
+  rag-network:
+    driver: bridge
