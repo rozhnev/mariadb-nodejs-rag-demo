@@ -46,11 +46,6 @@ typings/
 .env.test.local
 .env.production.local
 
-# Database data directories (Docker volumes)
-mariadb-data/
-mysql-data/
-db-data/
-
 # Ollama model storage (Docker volume)
 ollama-data/
 

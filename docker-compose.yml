@@ -10,7 +10,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./mariadb-data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - rag-network
@@ -67,6 +67,9 @@ services:
         condition: service_healthy
     networks:
       - rag-network
+
+volumes:
+  mariadb_data:
 
 networks:
   rag-network:
