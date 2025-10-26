@@ -89,8 +89,3 @@ CREATE OR REPLACE TABLE products (
     INDEX idx_rating (rating),
     INDEX idx_sku (sku)
 );
-
--- Grant permissions to app user
-GRANT SELECT, INSERT, UPDATE, DELETE ON rag_demo.walmart_products TO 'app_user'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON rag_demo.products TO 'app_user'@'%';
-FLUSH PRIVILEGES;
