@@ -25,7 +25,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama-data:/root/.ollama
+      - ollama_data:/root/.ollama
     networks:
       - rag-network
     environment:
@@ -70,6 +70,7 @@ services:
 
 volumes:
   mariadb_data:
+  ollama_data:
 
 networks:
   rag-network:

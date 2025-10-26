@@ -46,9 +46,6 @@ typings/
 .env.test.local
 .env.production.local
 
-# Ollama model storage (Docker volume)
-ollama-data/
-
 # Logs
 logs/
 *.log
