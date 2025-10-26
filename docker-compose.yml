@@ -3,10 +3,10 @@ services:
     image: mariadb:11.8
     container_name: mariadb-rag-demo
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: rag_demo
-      MYSQL_USER: app_user
-      MYSQL_PASSWORD: app_password
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: rag_demo
+      MARIADB_USER: app_user
+      MARIADB_PASSWORD: app_password
     ports:
       - "3306:3306"
     volumes:
@@ -15,7 +15,7 @@ services:
     networks:
       - rag-network
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       timeout: 20s
       retries: 10
 # Ollama service
