@@ -266,3 +266,7 @@ docker-compose up -d
 - All containers are connected via a custom network `rag-network`
 - Health checks are configured for all services
 - The Node.js container waits for MariaDB to be healthy before starting
+
+## License
+
+This project is licensed under the MIT License.
