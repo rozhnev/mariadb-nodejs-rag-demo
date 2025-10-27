@@ -111,6 +111,21 @@ The system automatically uses the `nomic-embed-text` model for embeddings and su
    docker exec ollama-rag-demo ollama run llama3.2:1b "Hello, can you help me choose a product?"
    ```
 
+5. **Generate Embeddings**
+   ```bash
+   # Pull llama3.2:1b for the Smart Product Recommendation
+   docker exec ollama-rag-demo ollama pull llama3.2:1b
+
+   # Pull nomic-embed-text for application Semantic Search Results
+   docker exec ollama-rag-demo ollama pull nomic-embed-text
+   # Generate the embeddings for database elements.
+   docker exec nodejs-rag-demo node generate_embeddings.js
+   ```
+
+6. **Search Application**
+
+   Use URL https:/localhost:3000 corresponding to nodejs-rag-demo.
+
 #### Generate Embeddings with Local Ollama
 
 1. **Generate embeddings for all products**:
