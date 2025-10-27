@@ -67,7 +67,6 @@ services:
         condition: service_healthy
     networks:
       - rag-network
-    command: ["npm", "run", "dev"]
 
 networks:
   rag-network:
