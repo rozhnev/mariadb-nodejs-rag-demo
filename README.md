@@ -179,8 +179,6 @@ mariadb-nodejs-rag-demo/
 │   ├── 01-create-tables.sql    # Schema with VECTOR support
 │   ├── 02-import-csv-data.sql  # Native CSV import
 │   └── walmart-products.csv    # Product data (1,011 records)
-├── ollama-data/                 # 🤖 Ollama models storage (auto-created)
-├── mariadb-data/               # Database data persistence (auto-created)
 ├── docker-compose.yml          # 🔥 Multi-service: MariaDB + Node.js + Ollama
 ├── ollama-init.sh             # Ollama model initialization script
 └── README.md                  # This documentation

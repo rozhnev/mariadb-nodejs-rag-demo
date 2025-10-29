@@ -1,7 +1,5 @@
 -- Create walmart_products table with optimized schema
-DROP TABLE IF EXISTS walmart_products;
-
-CREATE TABLE walmart_products (
+CREATE OR REPLACE TABLE walmart_products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp DATETIME,
     url TEXT,
@@ -62,9 +60,7 @@ CREATE TABLE walmart_products (
 );
 
 -- Create a simplified products table for easier querying
-DROP TABLE IF EXISTS products;
-
-CREATE TABLE products (
+CREATE OR REPLACE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sku VARCHAR(50) UNIQUE,
     name TEXT,
@@ -93,8 +89,3 @@ CREATE TABLE products (
     INDEX idx_rating (rating),
     INDEX idx_sku (sku)
 );
-
--- Grant permissions to app user
-GRANT SELECT, INSERT, UPDATE, DELETE ON rag_demo.walmart_products TO 'app_user'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON rag_demo.products TO 'app_user'@'%';
-FLUSH PRIVILEGES;

@@ -3,19 +3,19 @@ services:
     image: mariadb:11.8
     container_name: mariadb-rag-demo
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: rag_demo
-      MYSQL_USER: app_user
-      MYSQL_PASSWORD: app_password
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: rag_demo
+      MARIADB_USER: app_user
+      MARIADB_PASSWORD: app_password
     ports:
       - "3306:3306"
     volumes:
-      - ./mariadb-data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - rag-network
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       timeout: 20s
       retries: 10
 # Ollama service
@@ -25,7 +25,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama-data:/root/.ollama
+      - ollama_data:/root/.ollama
     networks:
       - rag-network
     environment:
@@ -67,6 +67,10 @@ services:
         condition: service_healthy
     networks:
       - rag-network
+
+volumes:
+  mariadb_data:
+  ollama_data:
 
 networks:
   rag-network:
